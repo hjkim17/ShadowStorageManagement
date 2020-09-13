@@ -6,6 +6,22 @@
 #include <cstring>
 #include <iostream>
 
+void simple_read_test() {
+
+}
+void simple_write_test() {
+
+}
+void read_on_read_test() {
+
+}
+void read_on_write_test() {
+
+}
+void write_on_write_test() {
+	
+}
+
 int main() {
     char src[10]="test";
     char dest[10];

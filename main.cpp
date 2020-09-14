@@ -7,31 +7,42 @@
 #include <iostream>
 
 void simple_read_test() {
-
+    // read from in-memory file
+    char in_memory_file[11] = "1234567890";
+    char result[11];
+    memset(result, 0, sizeof(char)*11);
+    FILE* file = CanDDaGae::fopen("simple_read_in_memory.txt", "r");
+    fread(result,sizeof(char), 11, file);
+    fclose(file);
+    printf("simple read from in-memory file: %s\n", result);
+    // read from disk file
+    memset(result, 0, sizeof(char)*11);
+    file = CanDDaGae::fopen("simple_read_disk_file.txt", "r");
+    fread(result,sizeof(char), 11, file);
+    fclose(file);
+    printf("simple read from in-memory file: %s\n", result);
 }
 void simple_write_test() {
-
+    // write to in-memory file
+    // write to disk file
 }
 void read_on_read_test() {
+    // read on read in-memory file
 
+    // read on read disk file
 }
 void read_on_write_test() {
+    // read on write in-memory file
 
+    // read on write disk file
 }
 void write_on_write_test() {
-	
+	// write on write in-memory file
+
+	// write on write disk file
 }
 
 int main() {
-    char src[10]="test";
-    char dest[10];
-    memset(dest, 0, sizeof(char)*10);
-    FILE* file = CanDDaGae::fopen("test.txt", "w");
-    fwrite(src, sizeof(char), 5, file);
-    fclose(file);
-    file = CanDDaGae::fopen("test.txt", "r");
-    fread(dest,sizeof(char), 5, file);
-    fclose(file);
-    std::cout<<dest<<"\n";
+    simple_read_test();
     return 0;
 }

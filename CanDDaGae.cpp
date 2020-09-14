@@ -75,9 +75,15 @@ void ContentFileTracker::do_swapouts() {
 }
 // TODO
 void ContentFileTracker::swapout(std::string key) {
+    // 1. get shared_ptr to get data and data size for Shadow
+    std::shared_ptr<NonPersistentElement> elem_ptr = std::dynamic_pointer_cast<NonPersistentElement>(elems.find(key)->second);
+    // 2. call shadow_storage_sharing_service()
+    // Shadow Context
+    // 3.
 }
 // TODO
 void ContentFileTracker::swapin(std::string key) {
+
 }
 FILE* ContentFileTracker::open(const char* filename, const char* modes) {
     int readOnly = checkReadOnly(modes);
@@ -115,10 +121,15 @@ FILE* ContentFileTracker::open(const char* filename, const char* modes) {
 void ContentFileTracker::debug_stats() {
     std::cout<<"element count: "<<elems.size()<<"\n";
     std::cout<<"element lists\n";
-    std::cout<<"IDX\tPATHt\TYPE\n";
+    std::cout<<"IDX\tPATH\tTYPE\n";
     auto it = elems.begin();
     while(it != elems.end()) {
 
         it++;
     }
+}
+
+ContentFileTracker tracker;
+FILE* CanDDaGae::fopen(const char* filename, const char* modes) {
+    return tracker.open(filename, modes);
 }

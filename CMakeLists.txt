@@ -3,4 +3,4 @@ project(ShadowStorageManagement)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(ShadowStorageManagement main.cpp)
+add_executable(ShadowStorageManagement CanDDaGae.cpp StorageElement.cpp main.cpp)

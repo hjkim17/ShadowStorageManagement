@@ -43,10 +43,7 @@ public:
 
 // Opener
 namespace CanDDaGae {
-    ContentFileTracker tracker;
-    FILE* fopen(const char* filename, const char* modes) {
-        return tracker.open(filename, modes);
-    }
+    FILE* fopen(const char* filename, const char* modes);
 }
 
 #endif //SHADOWSTORAGEMANAGEMENT_CANDDAGAE_H

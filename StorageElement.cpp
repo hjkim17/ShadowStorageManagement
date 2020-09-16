@@ -4,21 +4,16 @@
 
 #include "StorageElement.h"
 
-FILE* PersistentElement::requestReadOnly(const char* modes) {
-    // normal fopen
-    return ::fopen(get_path().c_str(), modes);
-}
-// TODO 2: implement request for PersistentElement
+// This should not be called. Write request should always called on Non-persistent storage element.
 FILE* PersistentElement::request(const char* modes) {
-    // LOCK the element
-    // shadow refDown call
-    /* SHADOW CONTEXT:
-     *   LOCK the Shadow Tracker
-     *   copy to memory
-     *   --ref on target
-     *   UNLOCK
-     *   return the copy
-     */
-    //
-    return nullptr;
+    return ::fopen(actual_path.c_str(), modes);
+}
+// TODO: shadow refdown on shared file => eventually file can be deleted
+void PersistentElement::try_delete() {
+    shadow_shared_try_delete(this->get_path().c_str());
+}
+
+// TODO: shadow refdown on shared file => eventually file can be added
+void NonPersistentElement::try_create(char** actual_path_ref) {
+    shadow_shared_try_create(this->get_path().c_str(), this->data, this->size, actual_path_ref);
 }

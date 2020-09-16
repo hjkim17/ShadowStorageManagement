@@ -68,45 +68,79 @@ int ContentFileTracker::cleanup_condition() {
 }
 void ContentFileTracker::do_swapouts() {
     while(ac.size() > CLEAN_UNTIL_THRESHOLD) {
-        std::string path = ac.pop()->get_path();
-        swapout(path);
+        swapout(ac.pop());
     }
     return;
 }
-// TODO
-void ContentFileTracker::swapout(std::string key) {
-    // 1. get shared_ptr to get data and data size for Shadow
-    std::shared_ptr<NonPersistentElement> elem_ptr = std::dynamic_pointer_cast<NonPersistentElement>(elems.find(key)->second);
-    // 2. call shadow_storage_sharing_service()
-    // Shadow Context
-    // 3.
-}
-// TODO
-void ContentFileTracker::swapin(std::string key) {
 
+std::shared_ptr<PersistentElement> ContentFileTracker::swapout(NonPersistentElement* elem) {
+    // try to copy to shared file, if exists, change reference
+    char* actual_path;
+    elem->try_create(&actual_path);
+    // add persistent storage to the list
+    std::shared_ptr<StorageElement> p_ptr = std::shared_ptr<StorageElement>(new PersistentElement(elem->get_path(), actual_path));
+    free(actual_path);
+    auto it = elems.find(p_ptr->get_path());
+    if(it != elems.end()) {
+        it->second = p_ptr;
+    } else {
+        elems.insert({p_ptr->get_path(), p_ptr});
+    }
+}
+#define FIXED_FILESIZE 0x1000
+std::shared_ptr<NonPersistentElement> ContentFileTracker::swapin(std::shared_ptr<PersistentElement> elem_ptr) {
+    // copy file
+    long int readcnt = 0;
+    long int size = 0;
+    NonPersistentElement* np_element = new NonPersistentElement(elem_ptr->get_path(), FIXED_FILESIZE);
+    FILE* fp = elem_ptr->request("rb");
+    while((readcnt = fread(np_element->get_data()+size, sizeof(char), FIXED_FILESIZE-size, fp)) != EOF) {
+        size += readcnt;
+    }
+    np_element->set_filesize(size);
+    fclose(fp);
+
+    // shadow refdown on shared file
+    elem_ptr->try_delete();
+
+    // add non-persistent storage to list
+    auto elem = std::shared_ptr<NonPersistentElement>(np_element);
+    auto it = elems.find(elem->get_path());
+    if(it != elems.end()) {
+        it->second = elem;
+    } else {
+        elems.insert({elem->get_path(), elem});
+    }
+    ac.push(elem.get());
+    if (cleanup_condition()) {
+        do_swapouts();
+    }
+    return elem;
 }
 FILE* ContentFileTracker::open(const char* filename, const char* modes) {
     int readOnly = checkReadOnly(modes);
     auto it = elems.find(filename);
     if (it != elems.end()) {
         if (it->second->get_storage_type()) {
+            // fopen
             FILE* file = it->second->request(modes);
+            // change access history
             NonPersistentElement* np = ac.remove(std::dynamic_pointer_cast<NonPersistentElement>(it->second).get());
             ac.push(np);
+            // add filename lookup
+            np_file_lookup.insert({file, filename});
             return file;
         } else if(readOnly){
-            // TODO 2: read persistent
+            // Persistent element's request function should be called only in this condition
+            FILE* file = it->second->request(modes);
         } else {
-            // TODO 2: write persistent
-            // add to non-persistent
-            // add elem as recently accessed element
-            // TODO 2: massive migration
-            if (cleanup_condition()) {
-                do_swapouts();
-            }
+            std::shared_ptr<PersistentElement> pe_ptr = std::dynamic_pointer_cast<PersistentElement>(it->second);
+            std::shared_ptr<StorageElement> elem_ptr = std::dynamic_pointer_cast<StorageElement>(swapin(pe_ptr));
+            FILE* res = elem_ptr->request(modes);
+            np_file_lookup.insert({res, filename});
+            return res;
         }
     } else {
-#define FIXED_FILESIZE 0x1000
         NonPersistentElement* np_element = new NonPersistentElement(filename, FIXED_FILESIZE);
         auto elem = std::shared_ptr<StorageElement>(np_element);
         auto it = elems.insert({filename, elem});
@@ -114,8 +148,27 @@ FILE* ContentFileTracker::open(const char* filename, const char* modes) {
         if (cleanup_condition()) {
             do_swapouts();
         }
-        return it.first->second->request(modes);
+        FILE* res = it.first->second->request(modes);
+        np_file_lookup.insert({res, filename});
+        return res;
     }
+}
+
+long int findFilesize(FILE* file) {
+    fseek(file, 0L, SEEK_END);
+    long int res = ftell(file);
+    return res;
+}
+int ContentFileTracker::close(FILE* file) {
+    auto np_it = np_file_lookup.find(file);
+    if(np_it != np_file_lookup.end()) {
+        std::string filename = np_it->second;
+        auto it = elems.find(filename);
+        fflush(file);
+        (std::dynamic_pointer_cast<NonPersistentElement>(it->second))->set_filesize(findFilesize(file));
+        np_file_lookup.erase(file);
+    }
+    fclose(file);
 }
 // TODO EXT: make debug print
 void ContentFileTracker::debug_stats() {
@@ -132,4 +185,7 @@ void ContentFileTracker::debug_stats() {
 ContentFileTracker tracker;
 FILE* CanDDaGae::fopen(const char* filename, const char* modes) {
     return tracker.open(filename, modes);
+}
+int CanDDaGae::fclose(FILE* file) {
+    return tracker.close(file);
 }

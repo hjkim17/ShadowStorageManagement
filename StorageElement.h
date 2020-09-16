@@ -20,36 +20,41 @@ public:
     }
     std::string get_path() {return path;}
     int get_storage_type() {return storage_type;}
-    virtual FILE* requestReadOnly(const char* modes) = 0;
     virtual FILE* request(const char* modes) = 0;
 };
 class PersistentElement : public StorageElement{
 private:
+    std::string actual_path;
 public:
-    PersistentElement(std::string path) : StorageElement(path, STORAGE_PERSISTENT) {}
-    FILE* requestReadOnly(const char* modes);
+    PersistentElement(std::string path, std::string actual_path) : StorageElement(path, STORAGE_PERSISTENT) {this->actual_path = actual_path;}
     FILE* request(const char* modes);
+    std::string get_actual_path() {return actual_path;}
+    void try_delete();
 };
+
 class NonPersistentElement : public StorageElement{
 private:
-    void* data;
+    char* data;
+    long int size;
     int filesize_limit;
 public:
     NonPersistentElement *prev, *next;
     NonPersistentElement(std::string path, int filesize) : StorageElement(path, STORAGE_NONPERSISTENT) {
         this->filesize_limit = filesize;
-        data = (void*)malloc(sizeof(char)*filesize);
+        data = (char*)malloc(sizeof(char)*filesize);
         prev = NULL;
         next = NULL;
     }
     ~NonPersistentElement() {
         free(data);
     }
-    FILE* requestReadOnly(const char* modes) {
-        return fmemopen(data, filesize_limit, modes);
-    }
     FILE* request(const char* modes) {
         return fmemopen(data, filesize_limit, modes);
     }
+    void set_filesize(long int size) {this->size = size;}
+    char* get_data() {
+        return this->data;
+    }
+    void try_create(char** actual_path_ref);
 };
 #endif //SHADOWSTORAGEMANAGEMENT_STORAGEELEMENT_H

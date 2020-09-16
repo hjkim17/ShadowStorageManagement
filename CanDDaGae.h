@@ -27,6 +27,7 @@ public:
 class ContentFileTracker {
 private:
     std::unordered_map<std::string, std::shared_ptr<StorageElement>> elems;
+    std::unordered_map<FILE*, std::string> np_file_lookup;
 #define CLEAN_ACTIVATION_THRESHOLD 2
 #define CLEAN_UNTIL_THRESHOLD 2
     AccessOrder ac;
@@ -34,16 +35,18 @@ private:
     int checkReadOnly(const char* modes);
     int cleanup_condition();
     void do_swapouts();
-    void swapout(std::string key);
-    void swapin(std::string key);
+    std::shared_ptr<PersistentElement> swapout(NonPersistentElement* elem_ptr);
+    std::shared_ptr<NonPersistentElement> swapin(std::shared_ptr<PersistentElement> elem_ptr);
 public:
     FILE* open(const char* filename, const char* modes);
+    int close(FILE* file);
     void debug_stats();
 };
 
 // Opener
 namespace CanDDaGae {
     FILE* fopen(const char* filename, const char* modes);
+    int fclose(FILE* file);
 }
 
 #endif //SHADOWSTORAGEMANAGEMENT_CANDDAGAE_H

@@ -13,13 +13,13 @@ void simple_read_test() {
     memset(result, 0, sizeof(char)*11);
     FILE* file = CanDDaGae::fopen("simple_read_in_memory.txt", "r");
     fread(result,sizeof(char), 11, file);
-    fclose(file);
+    CanDDaGae::fclose(file);
     printf("simple read from in-memory file: %s\n", result);
     // read from disk file
     memset(result, 0, sizeof(char)*11);
     file = CanDDaGae::fopen("simple_read_disk_file.txt", "r");
     fread(result,sizeof(char), 11, file);
-    fclose(file);
+    CanDDaGae::fclose(file);
     printf("simple read from in-memory file: %s\n", result);
 }
 void simple_write_test() {
